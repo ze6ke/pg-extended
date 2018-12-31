@@ -6,6 +6,13 @@
   "repository": "https://github.com/ze6ke/pg-extended",
   "author": "Zeke Wander <git@ze6ke.com>",
   "license": "MIT",
+  "keywords": [
+    "postgres",
+    "pg",
+    "transaction",
+    "temp table",
+    "temptable"
+  ],
   "scripts": {
     "test": "mocha test.js"
   },
