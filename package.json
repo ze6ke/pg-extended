@@ -1,0 +1,19 @@
+{
+  "name": "pg-extended",
+  "version": "1.0.0",
+  "description": "Extensions to pg",
+  "main": "index.js",
+  "repository": "https://github.com/ze6ke/pg-extended",
+  "author": "Zeke Wander <git@ze6ke.com>",
+  "license": "MIT",
+  "scripts": {
+    "test": "mocha test.js"
+  },
+  "dependencies": {
+    "pg": "^7.7.1"
+  },
+  "devDependencies": {
+    "chai": "^4.2.0",
+    "mocha": "^5.2.0"
+  }
+}
