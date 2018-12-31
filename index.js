@@ -6,8 +6,10 @@ function setupPool (pool) {
     let client = await pool.connect()
 
     client.buildTempTable = function (tableName, data, dropOnCommit, schema) {
-      return buildTempTable(tableName, data, dropOnCommit, schema, client)
+      return buildTempTable(tableName, data, schema, dropOnCommit, client)
     }
+
+    client.runInTransaction = runInTransaction
 
     let oldFunction = client.release
 
@@ -36,51 +38,55 @@ function setupPool (pool) {
     }
   }
 
-  /**
-   *  * runs a function inside of a transaction and commits unless an exception is throw.  After resolving the transaction it passes back either the return value or the exception
-   *   */
-  pool.runInTransaction = async function (f) {
-    let dbClient = null
-
+  pool.runInTransaction = async function (...args) {
+    let client 
     try {
-      dbClient = await this.getClient()
-
-      await dbClient.query('BEGIN;')
-
-      let retval = await f(dbClient)
-
-      await dbClient.query('COMMIT;')
-
-      dbClient.release()
-
-      return retval
-
-    } catch (e) {//always rollback on exception if the transaction was opened
-      if(dbClient) {
-        let caughtException
-        try {
-          await dbClient.query('ROLLBACK;')//rollback any work that hasn't been committed.
-        } catch (e) {
-          caughtException = e
-        }
-
-        dbClient.release()
-        if(caughtException) { //there's no helpful way to notify the user of the inner exception
-          console.error(caughtException)
-        }
+      client = await this.getClient()
+      return await client.runInTransaction(...args)
+    } finally {
+      if(client) {
+        client.release()
       }
-
-      throw e //and rethrow the exception
     }
   }
 
   return pool
 }
 
+/**
+ *  * runs a function inside of a transaction and commits unless an exception is throw.  After resolving the transaction it passes back either the return value or the exception
+ *   */
+async function runInTransaction (f) {
+
+  let dbClient = this
+
+  try {
+    await dbClient.query('BEGIN;')
+
+    let retval = await f(dbClient)
+
+    await dbClient.query('COMMIT;')
+
+    return retval
+
+  } catch (e) {//always rollback on exception if the transaction was opened
+    if(dbClient) {
+      try {
+        await dbClient.query('ROLLBACK;')//rollback any work that hasn't been committed.
+      } catch (e) { //there's no helpful way to notify the user of the inner exception
+        console.error(caughtException)
+      }
+    }
+
+    throw e //and rethrow the exception
+  }
+}
 
 function connectionCleanup (client) {
   return client.query('DISCARD ALL')
 }
+
+const fieldValidationPattern = /[a-zA-Z][a-zA-Z0-9]*/
 
 /**
  * a function that takes an array of identical objects and creates a temp table on the server.
@@ -102,7 +108,7 @@ async function buildTempTable(name, data, dropOnCommit = false, schema, client) 
     throw new Error('Data has length 0 and no schema was provided')
   }
 
-  let fieldProblems = fields.filter(field=>!(dbUtil.fieldValidationPattern.test(field)))
+  let fieldProblems = fields.filter(field=>!(fieldValidationPattern.test(field)))
 
   if(fieldProblems.length) {
     throw new Error('each field in data needs to begin with a letter and then have 0 or more letters and numbers')
