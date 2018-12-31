@@ -35,7 +35,7 @@ client.release()
 
 
 ## buildTempTable
-pg has nice features for inserting a single row into a table, but it requires round trips to the DB server to insert multiple rows.  In addition, programs often need to do set based validations before performing inserts, and these can be easier and more effecient when done on the database server.
+pg has nice features for inserting a single row into a table, but it requires round trips to the DB server to insert multiple rows.  In addition, programs often need to do set based validations before performing inserts, and these can be easier and more efficient when done on the database server.
 
 buildTempTable offers an efficient way to load arbitrary numbers of records to the server for validation and processing.  It takes 4 arguments, a table name, an array of objects, a default data schema (necessary when the data array has 0 records), and a boolean specifying if the table should be dropped on commit (defaults to false and only valuable when used inside a transaction).
 
